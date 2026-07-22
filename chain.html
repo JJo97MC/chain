@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Chain</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap');
+
+:root{
+  --ink:      #F7E1D7;  /* Powder Petal — page background */
+  --panel:    #FFFFFF;  /* tile / card surface */
+  --panel-2:  #F1E4DC;  /* button surface */
+  --paper:    #4A5759;  /* Iron Grey — primary text */
+  --paper-dim:#7C8A8C;  /* muted Iron Grey */
+  --brass:    #C97D8C;  /* deepened Cherry Blossom — legible accent */
+  --brass-dim:#EDAFB8;  /* Cherry Blossom — soft borders/tints */
+  --good:     #B0C4B1;  /* Ash Grey */
+  --bad:      #B0546A;  /* deepened rose — errors, distinct from accent */
+  --hairline: #DEDBD2;  /* Dust Grey — dividers/borders */
+  --hint:     #7E9481;  /* deepened Ash Grey — hinted letters */
+  --on-accent:#FFFFFF;
+  --radius: 3px;
+}
+
+*{ box-sizing:border-box; }
+html,body{ margin:0; padding:0; }
+body{
+  background: var(--ink);
+  color: var(--paper);
+  font-family: 'IBM Plex Sans', -apple-system, sans-serif;
+  min-height:100%;
+  display:flex;
+  justify-content:center;
+  padding: 28px 14px 60px;
+}
+
+.app{ width:100%; max-width: 420px; }
+
+/* ---------- header ---------- */
+.header{
+  display:flex;
+  justify-content:space-between;
+  align-items:baseline;
+  border-bottom: 1px solid var(--hairline);
+  padding-bottom: 12px;
+  margin-bottom: 18px;
+}
+.title{
+  font-family:'Fraunces', serif;
+  font-weight:600;
+  font-size: 30px;
+  letter-spacing: 0.5px;
+  color: var(--paper);
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.title svg{ width:22px; height:22px; }
+
+.brief{
+  font-size: 13.5px;
+  color: var(--paper-dim);
+  line-height:1.5;
+  margin-bottom: 20px;
+}
+.brief b{ color: var(--paper); font-weight:600; }
+
+/* ---------- ladder ---------- */
+.ladder{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  margin-bottom: 18px;
+}
+.rung{
+  display:flex;
+  gap:6px;
+}
+.cell{
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius);
+  background: var(--panel);
+  border: 1px solid var(--hairline);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-family:'IBM Plex Mono', monospace;
+  font-size: 19px;
+  font-weight:600;
+  color: var(--paper);
+  text-transform:uppercase;
+  transition: border-color .25s, background .25s, transform .15s;
+}
+.cell.changed{
+  color: var(--brass);
+  border-color: var(--brass-dim);
+}
+.cell.start{ border-color: var(--paper-dim); }
+.cell.target{
+  color: var(--paper-dim);
+  border-style: dashed;
+  background: transparent;
+}
+.cell.hinted{ color: var(--hint); }
+.cell.wrong{ border-color: var(--bad); animation: shake .3s; }
+
+@keyframes shake{
+  0%,100%{ transform: translateX(0); }
+  25%{ transform: translateX(-4px); }
+  75%{ transform: translateX(4px); }
+}
+
+.link{
+  height: 22px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.link svg{ width:14px; height:22px; }
+.link .ring{ fill:none; stroke: var(--hairline); stroke-width:2.4; }
+.link.solid .ring{ stroke: var(--brass); }
+.link.pending .ring{ stroke: var(--hairline); stroke-dasharray: 3 3; }
+
+.tag{
+  font-family:'IBM Plex Mono', monospace;
+  font-size:9px;
+  letter-spacing:1px;
+  color: var(--paper-dim);
+  text-transform:uppercase;
+  margin-top:2px;
+}
+
+/* ---------- input row ---------- */
+.inputrow{
+  display:flex;
+  gap:8px;
+  margin-bottom: 12px;
+}
+input[type=text]{
+  flex:1;
+  background: var(--panel);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius);
+  color: var(--paper);
+  font-family:'IBM Plex Mono', monospace;
+  font-size: 18px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 10px 12px;
+  outline:none;
+}
+input[type=text]:focus{ border-color: var(--brass-dim); }
+input[type=text]::placeholder{ color:#565C68; letter-spacing:1px; text-transform:none; font-size:13px; }
+
+button{
+  font-family:'IBM Plex Sans', sans-serif;
+  font-weight:600;
+  font-size: 13px;
+  border-radius: var(--radius);
+  border: 1px solid var(--hairline);
+  background: var(--panel-2);
+  color: var(--paper);
+  cursor:pointer;
+  padding: 0 16px;
+  transition: background .15s, border-color .15s;
+}
+button:hover{ border-color: var(--brass-dim); }
+button:active{ transform: translateY(1px); }
+button.primary{ background: var(--brass); color: var(--on-accent); border-color: var(--brass); }
+button.primary:hover{ background:#B96C7C; }
+button:disabled{ opacity:0.4; cursor:default; }
+
+.msg{
+  min-height: 18px;
+  font-size: 12.5px;
+  color: var(--bad);
+  margin-bottom: 10px;
+  font-family:'IBM Plex Mono', monospace;
+}
+
+.toolbar{
+  display:flex;
+  gap:8px;
+  justify-content:space-between;
+  border-top: 1px solid var(--hairline);
+  padding-top: 14px;
+  margin-top:6px;
+}
+.toolbar .left{ display:flex; gap:8px; }
+
+/* ---------- result ---------- */
+.result{
+  display:none;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--hairline);
+  text-align:center;
+}
+.result.show{ display:block; }
+.result h2{
+  font-family:'Fraunces', serif;
+  font-size:22px;
+  margin: 0 0 4px;
+  color: var(--brass);
+}
+.result p{
+  font-size:13px;
+  color: var(--paper-dim);
+  margin: 0 0 14px;
+}
+.grid{
+  font-size: 20px;
+  letter-spacing: 4px;
+  margin-bottom: 14px;
+}
+.footer-note{
+  text-align:center;
+  font-size: 11px;
+  color: #565C68;
+  margin-top: 22px;
+  line-height:1.6;
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="header">
+    <div class="title">
+      <svg viewBox="0 0 24 24"><g fill="none" stroke="#C97D8C" stroke-width="2"><rect x="3" y="8" width="8" height="8" rx="4"/><rect x="13" y="8" width="8" height="8" rx="4"/></g></svg>
+      Chain
+    </div>
+  </div>
+
+  <div class="brief" id="brief"></div>
+
+  <div class="ladder" id="ladder"></div>
+
+  <div class="msg" id="msg"></div>
+
+  <div class="inputrow">
+    <input type="text" id="wordInput" maxlength="4" placeholder="type the next word" autocomplete="off" spellcheck="false">
+    <button class="primary" id="addBtn">Add link</button>
+  </div>
+
+  <div class="toolbar">
+    <div class="left">
+      <button id="hintBtn">Hint (2 left)</button>
+      <button id="newBtn">New puzzle</button>
+    </div>
+    <button id="shareBtn" disabled>Share</button>
+  </div>
+
+  <div class="result" id="result">
+    <h2 id="resultTitle">Chain complete</h2>
+    <p id="resultSub"></p>
+    <div class="grid" id="resultGrid"></div>
+    <button class="primary" id="shareBtn2">Copy result</button>
+  </div>
+
+  <div class="footer-note">One clean link at a time. Change a single letter, keep it a real word, reach the target.</div>
+  <div class="footer-note" id="copyright"></div>
+</div>
+
+<script>
+/* ---------------- dictionary ---------------- */
+const WORDS = `able acid aged also area army away baby back ball band bank bare bark barn base bath bead beam bean bear beat been beer bell belt bend bent best bike bill bird bite blue boat body bold bolt bomb bond bone bony book boot bore born boss both bowl bulk bull burn bury bush busy cage cake calf call calm came camp cane cape card care carp cart case cash cast cave cell cent chef chip city clay club coal coat code coin cold come cone cook cool cope copy cord core corn cost cove crab crew crop cure curl cute dark dash data date dawn dead deal dean dear debt deck deed deep deer dell dent desk dial dice diet dime dine dirt dish disk dive dock doll dome done doom door dose dove down drag draw drop drug drum dual duck dude duke dull dumb dump dune dusk dust duty each earn ease east easy edge edit else envy epic even ever evil exam exit face fact fade fail fair fake fall fame fang farm fast fate fear feat feed feel feet fell felt fend fern fest file fill film find fine fire firm fish fist five flag flat flip flow foam foil fold folk fond font food fool foot ford fork form fort foul four fowl free fret frog from fuel full fume fund fuse gain gale game gang gate gave gaze gear gene gift girl give glad glow glue goal goat gold golf gone good gown grab gray grew grey grid grim grin grip grow gulf gull gulp gush hail hair half hall halt hand hang hard harm harp hate have hawk haze head heal heap hear heat heel heir held hell helm help herb herd here hero hide high hike hill hint hire hive hold hole holy home hood hoof hook hope horn hose host hour howl huge hull hunt hurl hurt hush hymn idea idle inch into iron item jail jazz join joke jolt jump jury just keen keep kept kick kill kind king kiss kite knee knew knit knob knot know lace lack lady lake lamb lame lamp land lane lard lark last late lava lawn lead leaf lean leap left lend lens less lest lick lied lift like lily limb lime limp line link lion list live load loaf loan lobe lock loft logo lone long look loom loop lord lore lose loss lost loud love luck lump lung lure lush lust made mail main make male mall malt many mare mark mars mask mass mast mate math meal mean meat meet melt mend menu mere mesh mess mice mild mile milk mill mind mine mint mist mock mode mold mole monk mood moon moor moot more moss most moth move much mule mute name navy near neat neck need nest news next nice nine node none nook noon nope nose note noun oath obey once only onto open oral over pace pack page paid pain pair pale palm pane park part pass past path peak pear peel peer pest pick pile pill pine pink pint pipe pity plan play plot plow plug plum plus poem poet pole poll pond pool poor pope pork port pose post pour pray prep prey prod prop pull pulp pump pure push race rack raft rage raid rail rain rake rank rare rate rave read real reap rear rely rend rent rest rice rich ride rift ring riot ripe rise risk road roam roar robe rock rode role roll roof room root rope rose rote rout rude rule rung runt rush rust sack safe sage sail sale salt same sand sane sang sank sash save seal seam seat seed seek seem seen self sell send sent sept shed ship shoe shop shot show shut sick side sift sign silk sill silo sing sink site size skew skip skit slab slam slap sled slid slim slip slit slot slow slug slum slur smog snap snip snow soak soap soar sock soda sofa soft soil sold sole some song soon soot sore sort soul soup sour sown span spar spat spin spit spot spun spur star stay stem step stew stir stop stow stub stud stun such suit sung sunk sure swam swap swat sway swim tack tail take tale talk tall tame tank tape task taxi teal team tear teen tell temp tend tent term test text than that thaw them then they thin this thud thug thus tick tide tidy tied tier tile till tilt time tint tiny tire toad tofu toil told toll tomb tone tool toot tore torn tort tour town toys trap tray tree trek trim trip trot true tuba tube tuna tune turf turn twin type ugly unit upon urge used user vain vale vary vase vast veal veil vein vent verb very vest veto vice view vine vote wade wage wake walk wall want ward warm warn wars wash wasp watt wave wavy weak wear weed week weep well went were west what when whip whom wide wife wild will wind wine wing wink wipe wire wise wish with wolf womb wood wool word wore work worm worn wove yard yarn year yell yoga yolk zeal zest zone`
+  .trim().split(/\s+/);
+const WSET = new Set(WORDS);
+
+const PUZZLES = [
+  {a:'cold', b:'warm'}, {a:'love', b:'hate'}, {a:'gold', b:'lead'},
+  {a:'sand', b:'rock'}, {a:'head', b:'tail'}, {a:'hard', b:'easy'},
+  {a:'wild', b:'tame'}, {a:'worm', b:'book'}, {a:'lamp', b:'fire'},
+  {a:'word', b:'note'}, {a:'ship', b:'boat'}, {a:'fire', b:'cool'},
+  {a:'moon', b:'star'}, {a:'slow', b:'fast'}, {a:'cake', b:'corn'}
+];
+
+/* ---------------- graph helpers ---------------- */
+function differsByOne(a,b){
+  if(a.length!==b.length) return false;
+  let diff=0;
+  for(let i=0;i<a.length;i++) if(a[i]!==b[i]) diff++;
+  return diff===1;
+}
+function neighbors(w){
+  const res=[];
+  for(let i=0;i<w.length;i++){
+    for(let c=97;c<=122;c++){
+      const ch=String.fromCharCode(c);
+      if(ch===w[i]) continue;
+      const nw = w.slice(0,i)+ch+w.slice(i+1);
+      if(WSET.has(nw)) res.push(nw);
+    }
+  }
+  return res;
+}
+function bfsPath(start,end){
+  if(!WSET.has(start) || !WSET.has(end)) return null;
+  const visited = new Map([[start,null]]);
+  const queue=[start];
+  while(queue.length){
+    const cur=queue.shift();
+    if(cur===end){
+      const path=[]; let n=cur;
+      while(n!==null){ path.unshift(n); n=visited.get(n); }
+      return path;
+    }
+    for(const nb of neighbors(cur)){
+      if(!visited.has(nb)){ visited.set(nb,cur); queue.push(nb); }
+    }
+  }
+  return null;
+}
+
+/* ---------------- state ---------------- */
+const MAX_HINTS = 2;
+let puzzle, chain, hints, solved, parPath;
+let lastIdx = -1;
+
+function loadPuzzle(freeplay){
+  let p, idx;
+  do {
+    idx = Math.floor(Math.random()*PUZZLES.length);
+  } while (PUZZLES.length > 1 && idx === lastIdx);
+  lastIdx = idx;
+  p = PUZZLES[idx];
+
+  puzzle = p;
+  chain = [p.a];
+  hints = new Set();
+  solved = false;
+  parPath = bfsPath(p.a, p.b);
+  document.getElementById('brief').innerHTML = `Turn <b>${p.a.toUpperCase()}</b> into <b>${p.b.toUpperCase()}</b>. Change one letter per link, and keep it a real word.`;
+  document.getElementById('result').classList.remove('show');
+  document.getElementById('shareBtn').disabled = true;
+  document.getElementById('msg').textContent = '';
+  document.getElementById('wordInput').value='';
+  updateHintBtn();
+  render();
+}
+
+function updateHintBtn(){
+  const remaining = MAX_HINTS - hints.size;
+  const btn = document.getElementById('hintBtn');
+  btn.textContent = remaining > 0 ? `Hint (${remaining} left)` : 'No hints left';
+  btn.disabled = remaining <= 0 || solved;
+}
+
+/* ---------------- render ---------------- */
+function linkSVG(state){
+  // state: solid | pending
+  return `<svg viewBox="0 0 14 22"><path class="ring" d="M7 2 C3 2 3 8 7 8 C11 8 11 14 7 14"/><path class="ring" d="M7 8 C3 8 3 14 7 14 C11 14 11 20 7 20" style="display:none"/></svg>`;
+}
+
+function render(){
+  const ladder = document.getElementById('ladder');
+  ladder.innerHTML = '';
+
+  chain.forEach((word, i) => {
+    const rung = document.createElement('div');
+    rung.className = 'rung';
+    const prev = i>0 ? chain[i-1] : null;
+    for(let c=0;c<word.length;c++){
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      if(i===0) cell.classList.add('start');
+      if(prev && word[c]!==prev[c]) cell.classList.add('changed');
+      if(hints.has(i)) cell.classList.add('hinted');
+      cell.textContent = word[c];
+      rung.appendChild(cell);
+    }
+    ladder.appendChild(rung);
+
+    const link = document.createElement('div');
+    link.className = 'link solid';
+    link.innerHTML = `<svg viewBox="0 0 14 22"><rect class="ring" x="4" y="1" width="6" height="9" rx="3"/><rect class="ring" x="4" y="12" width="6" height="9" rx="3"/></svg>`;
+    ladder.appendChild(link);
+  });
+
+  if(!solved){
+    const rung = document.createElement('div');
+    rung.className = 'rung';
+    for(let c=0;c<4;c++){
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      cell.textContent = '';
+      rung.appendChild(cell);
+    }
+    ladder.appendChild(rung);
+
+    const link = document.createElement('div');
+    link.className = 'link pending';
+    link.innerHTML = `<svg viewBox="0 0 14 22"><rect class="ring" x="4" y="1" width="6" height="9" rx="3"/><rect class="ring" x="4" y="12" width="6" height="9" rx="3"/></svg>`;
+    ladder.appendChild(link);
+  }
+
+  const targetRung = document.createElement('div');
+  targetRung.className = 'rung';
+  for(let c=0;c<puzzle.b.length;c++){
+    const cell = document.createElement('div');
+    cell.className = 'cell target';
+    cell.textContent = puzzle.b[c];
+    targetRung.appendChild(cell);
+  }
+  ladder.appendChild(targetRung);
+}
+
+/* ---------------- interaction ---------------- */
+function showMsg(text){
+  document.getElementById('msg').textContent = text;
+}
+
+function submitWord(){
+  if(solved) return;
+  const input = document.getElementById('wordInput');
+  const w = input.value.trim().toLowerCase();
+  const last = chain[chain.length-1];
+
+  if(w.length !== 4){ showMsg('Word needs to be 4 letters.'); flashWrong(); return; }
+  if(chain.includes(w)){ showMsg('Already used that word.'); flashWrong(); return; }
+  if(!differsByOne(last, w)){ showMsg('Change exactly one letter from ' + last.toUpperCase() + '.'); flashWrong(); return; }
+  if(!WSET.has(w)){ showMsg('Not a word in the list — try another.'); flashWrong(); return; }
+
+  showMsg('');
+  chain.push(w);
+  input.value = '';
+  render();
+
+  if(w === puzzle.b){
+    finish();
+  }
+}
+
+function flashWrong(){
+  render();
+  const cells = document.querySelectorAll('.ladder .rung:last-of-type .cell');
+}
+
+function useHint(){
+  if(solved) return;
+  if(hints.size >= MAX_HINTS){ showMsg('No hints left — you\'re on your own from here.'); return; }
+  const last = chain[chain.length-1];
+  const path = bfsPath(last, puzzle.b);
+  if(!path || path.length < 2){ showMsg('No hint available.'); return; }
+  const next = path[1];
+  chain.push(next);
+  hints.add(chain.length-1);
+  document.getElementById('wordInput').value='';
+  showMsg('');
+  updateHintBtn();
+  render();
+  if(next === puzzle.b) finish();
+}
+
+function finish(){
+  solved = true;
+  updateHintBtn();
+  render();
+  const steps = chain.length - 1;
+  const par = parPath ? parPath.length - 1 : steps;
+  document.getElementById('result').classList.add('show');
+  document.getElementById('shareBtn').disabled = false;
+
+  let title = 'Chain complete';
+  let diff = steps - par;
+  if(diff <= 0) title = 'Perfect chain';
+  else if(diff <= 2) title = 'Chain complete';
+  else title = 'Chain complete — the long way';
+  document.getElementById('resultTitle').textContent = title;
+  document.getElementById('resultSub').textContent =
+    `${steps} link${steps===1?'':'s'} used · par is ${par} · ${hints.size} hint${hints.size===1?'':'s'}`;
+
+  let grid = '';
+  for(let i=1;i<chain.length;i++){
+    grid += hints.has(i) ? '🟨' : '🟩';
+  }
+  document.getElementById('resultGrid').textContent = grid;
+
+  document.getElementById('wordInput').blur();
+}
+
+function doShare(){
+  const steps = chain.length - 1;
+  const par = parPath ? parPath.length - 1 : steps;
+  let grid = '';
+  for(let i=1;i<chain.length;i++) grid += hints.has(i) ? '🟨' : '🟩';
+  const text = `Chain\n${puzzle.a.toUpperCase()} → ${puzzle.b.toUpperCase()}\n${steps}/${par} links\n${grid}`;
+  navigator.clipboard?.writeText(text).then(()=>{
+    showMsg('Result copied to clipboard.');
+  }).catch(()=>{
+    showMsg(text);
+  });
+}
+
+document.getElementById('addBtn').addEventListener('click', submitWord);
+document.getElementById('wordInput').addEventListener('keydown', e=>{ if(e.key==='Enter') submitWord(); });
+document.getElementById('hintBtn').addEventListener('click', useHint);
+document.getElementById('newBtn').addEventListener('click', ()=>loadPuzzle(true));
+document.getElementById('shareBtn').addEventListener('click', doShare);
+document.getElementById('shareBtn2').addEventListener('click', doShare);
+
+document.getElementById('copyright').textContent = `© ${new Date().getFullYear()} squirrel_fan games. All rights reserved.`;
+
+loadPuzzle(false);
+</script>
+</body>
+</html>
